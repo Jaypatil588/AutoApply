@@ -50,6 +50,7 @@ class UserProfile(BaseModel):
     state: str
     zip_code: str = ""
     country: str = "United States"
+    preferred_location: str = ""
     bio: str
     linkedin_url: str | None = None
     portfolio_url: str | None = None
@@ -64,6 +65,8 @@ class UserProfile(BaseModel):
     # Backward-compatible property — formatted location string
     @property
     def location(self) -> str:
+        if self.preferred_location:
+            return self.preferred_location
         parts = [self.city, self.state]
         loc = ", ".join(p for p in parts if p)
         if self.country and self.country != "United States":

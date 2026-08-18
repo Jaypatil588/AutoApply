@@ -18,6 +18,7 @@ class BotState:
         self._applied_today: int = 0
         self._start_time: datetime | None = None
         self._errors_today: int = 0
+        self._consecutive_successes: int = 0
 
         # Review gate — bot blocks here until user decides
         self._review_event = threading.Event()
@@ -110,12 +111,20 @@ class BotState:
     def increment_errors(self) -> None:
         with self._lock:
             self._errors_today += 1
+            self._consecutive_successes = 0
+
+    def record_success(self) -> int:
+        with self._lock:
+            self._applied_today += 1
+            self._consecutive_successes += 1
+            return self._consecutive_successes
 
     def reset_daily(self) -> None:
         with self._lock:
             self._jobs_found_today = 0
             self._applied_today = 0
             self._errors_today = 0
+            self._consecutive_successes = 0
 
     def begin_review(self) -> None:
         """Signal that the bot is waiting for a user review decision."""
@@ -203,6 +212,7 @@ class BotState:
                 "jobs_found_today": self._jobs_found_today,
                 "applied_today": self._applied_today,
                 "errors_today": self._errors_today,
+                "consecutive_successes": self._consecutive_successes,
                 "start_time": self._start_time.isoformat() if self._start_time else None,
                 "uptime_seconds": uptime_seconds,
                 "awaiting_review": self._awaiting_review,

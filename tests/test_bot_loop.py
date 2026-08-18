@@ -30,6 +30,7 @@ class FakeRawJob:
     platform: str = "linkedin"
     external_id: str = "job-001"
     posted_at: str | None = None
+    prequalified: bool = False
 
 
 def _make_scored(raw=None, score=80, pass_filter=True, skip_reason=""):
@@ -55,6 +56,8 @@ def _make_config(
     cfg.bot.apply_mode = apply_mode
     cfg.bot.max_applications_per_day = max_per_day
     cfg.bot.delay_between_applications_seconds = delay
+    cfg.bot.application_timeout_seconds = 120
+    cfg.bot.consecutive_success_target = 10
     cfg.bot.search_interval_seconds = search_interval
     cfg.bot.cover_letter_template = "Dear Hiring Manager..."
     cfg.search_criteria = MagicMock()
@@ -520,7 +523,7 @@ class TestRunBotMainLoop:
         with patch("bot.bot.SEARCHERS", {"linkedin": searcher_cls}):
             run_bot(state, config, db)
 
-        assert state.errors_today > 0
+        assert state.errors_today == 0
 
     @patch("bot.bot.time.sleep")
     @patch("bot.bot._save_job_description", return_value=None)

@@ -53,6 +53,7 @@ class UserProfile(BaseModel):
     preferred_location: str = ""
     bio: str
     linkedin_url: str | None = None
+    github_url: str | None = None
     portfolio_url: str | None = None
     fallback_resume_path: str | None = None
     screening_answers: dict = {}
@@ -146,6 +147,8 @@ class BotConfig(BaseModel):
     min_match_score: int = 75
     max_applications_per_day: int = 50
     delay_between_applications_seconds: int = 45
+    application_timeout_seconds: int = 120
+    consecutive_success_target: int = 10
     search_interval_seconds: int = 1800
     apply_mode: str = "full_auto"  # "full_auto" | "review" | "watch"
     watch_mode: bool = False  # Deprecated: use apply_mode instead

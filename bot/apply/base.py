@@ -36,6 +36,8 @@ class ApplyResult:
     login_domain: str | None = None
     login_portal_type: str | None = None
     attempts: int = 1
+    elapsed_seconds: float = 0.0
+    timed_out: bool = False
 
 
 class BaseApplier(ABC):
@@ -45,6 +47,7 @@ class BaseApplier(ABC):
     ELEMENT_TIMEOUT: int = 5000
     # Default timeout (ms) for page navigation
     NAV_TIMEOUT: int = 30000
+    APPLICATION_TIMEOUT_SECONDS: int = 120
 
     def __init__(self, page) -> None:
         self.page = page
@@ -76,12 +79,24 @@ class BaseApplier(ABC):
             ApplyResult indicating success or failure.
         """
         last_result = None
+        started_at = time.monotonic()
         platform = self.__class__.__name__.replace("Applier", "")
 
         for attempt in range(1, MAX_RETRIES + 2):  # 1 + MAX_RETRIES
             try:
                 result = self._do_apply(job, resume_pdf_path, cover_letter_text, profile)
                 result.attempts = attempt
+                result.elapsed_seconds = time.monotonic() - started_at
+                if result.elapsed_seconds >= self.APPLICATION_TIMEOUT_SECONDS and not (
+                    result.success or result.captcha_detected
+                ):
+                    result.timed_out = True
+                    result.manual_required = True
+                    result.error_message = (
+                        f"Application exceeded {self.APPLICATION_TIMEOUT_SECONDS}s: "
+                        f"{result.error_message or 'submission not confirmed'}"
+                    )
+                    return result
 
                 # Don't retry on non-transient results
                 if result.success or result.captcha_detected or result.manual_required:
@@ -107,16 +122,24 @@ class BaseApplier(ABC):
 
             # Retry if we have attempts left
             if attempt <= MAX_RETRIES:
+                elapsed = time.monotonic() - started_at
+                if elapsed >= self.APPLICATION_TIMEOUT_SECONDS:
+                    break
                 delay = RETRY_DELAYS[attempt - 1] if attempt - 1 < len(RETRY_DELAYS) else 8
+                if elapsed + delay >= self.APPLICATION_TIMEOUT_SECONDS:
+                    break
                 logger.info(
                     "%s: retrying in %ds (attempt %d/%d)",
                     platform, delay, attempt + 1, MAX_RETRIES + 1,
                 )
                 time.sleep(delay)
 
-        return last_result or ApplyResult(
+        result = last_result or ApplyResult(
             success=False, error_message="All retry attempts exhausted",
         )
+        result.elapsed_seconds = time.monotonic() - started_at
+        result.timed_out = result.elapsed_seconds >= self.APPLICATION_TIMEOUT_SECONDS
+        return result
 
     def _human_type(self, locator, text: str) -> None:
         """Type text character by character with human-like delays."""

@@ -241,6 +241,18 @@ class TestSaveApplicationStatus:
         kwargs = db.save_application.call_args[1]
         assert kwargs["status"] == "manual_required"
 
+    def test_captcha_is_permanently_ignored(self):
+        from bot.apply.base import ApplyResult
+        from bot.bot import _save_application
+
+        db = MagicMock()
+        scored = _make_scored()
+        result = ApplyResult(
+            success=False, captcha_detected=True, manual_required=True,
+        )
+        _save_application(db, scored, None, None, "", result)
+        assert db.save_application.call_args[1]["status"] == "captcha_ignored"
+
 
 # ===================================================================
 # app_state module

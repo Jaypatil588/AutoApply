@@ -243,9 +243,14 @@ def run_bot(
                             message=f"Applying via {detect_ats(raw_job.apply_url) or raw_job.platform}...",
                         )
 
+                        attempt_started = time.monotonic()
                         result = _apply_to_job(
                             scored, resume_path, cover_letter_text, config, page,
                             db=db,
+                        )
+                        result.elapsed_seconds = max(
+                            result.elapsed_seconds,
+                            time.monotonic() - attempt_started,
                         )
 
                         # Login gate — pause for user to log in (FR-089)
@@ -302,25 +307,49 @@ def run_bot(
 
                         # Emit result
                         if result.success:
-                            state.increment_applied()
+                            streak = state.record_success()
                             emit(
                                 "APPLIED",
                                 job_title=raw_job.title,
                                 company=raw_job.company,
                                 platform=raw_job.platform,
-                                message=f"Applied to {raw_job.title} at {raw_job.company}",
+                                message=(
+                                    f"Applied to {raw_job.title} at {raw_job.company} "
+                                    f"({streak}/{config.bot.consecutive_success_target} consecutive)"
+                                ),
                             )
+                            if streak >= config.bot.consecutive_success_target:
+                                state.pause()
+                                emit(
+                                    "TARGET_REACHED",
+                                    message=f"Reached {streak} consecutive confirmed applications",
+                                )
+                                _wait_while_paused(state)
                         elif result.captcha_detected:
-                            state.increment_errors()
                             emit(
-                                "CAPTCHA",
+                                "CAPTCHA_IGNORED",
                                 job_title=raw_job.title,
                                 company=raw_job.company,
                                 platform=raw_job.platform,
-                                message=f"CAPTCHA detected at {raw_job.company}",
+                                message=f"CAPTCHA permanently ignored at {raw_job.company}",
                             )
                         else:
                             state.increment_errors()
+                            try:
+                                from core.selector_bank import capture_failed_form
+
+                                dom_path = capture_failed_form(
+                                    page,
+                                    platform=detect_ats(raw_job.apply_url) or raw_job.platform,
+                                    external_id=raw_job.external_id,
+                                    reason=result.error_message or "Application failed",
+                                )
+                                result.error_message = (
+                                    f"{result.error_message or 'Application failed'}; "
+                                    f"DOM captured at {dom_path}"
+                                )
+                            except Exception as e:
+                                logger.warning("Failed to capture application DOM: %s", e)
                             emit(
                                 "ERROR",
                                 job_title=raw_job.title,
@@ -620,6 +649,7 @@ def _apply_to_job(scored, resume_path, cover_letter_text, config, page, db=None)
                 error_message=f"Login required at {domain} (first visit)",
             )
 
+    applier_cls.APPLICATION_TIMEOUT_SECONDS = config.bot.application_timeout_seconds
     applier = applier_cls(page)
     return applier.apply(scored, resume_path, cover_letter_text, config.profile)
 
@@ -692,7 +722,9 @@ def _save_application(db, scored, resume_path, cl_path, cover_letter_text, resul
     """Save an application record and optional resume version to the database."""
     try:
         status = "applied" if result.success else (
-            "manual_required" if result.manual_required else "error"
+            "captcha_ignored" if result.captcha_detected else (
+                "manual_required" if result.manual_required else "error"
+            )
         )
         app_id = db.save_application(
             external_id=scored.raw.external_id,

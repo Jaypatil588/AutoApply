@@ -10,6 +10,7 @@ import pytest
 from bot.search.career_ops import CareerOpsSearcher, load_career_ops_jobs
 from config.settings import AppConfig
 from core.filter import score_job
+from core.filter import ScoredJob
 
 
 NOW = datetime(2026, 8, 18, 22, 0, tzinfo=timezone.utc)
@@ -103,3 +104,36 @@ def test_prequalified_job_bypasses_second_scoring_pass(valid_app_config_data):
     scored = score_job(raw, config)
     assert scored.pass_filter is True
     assert scored.score == 100
+
+
+def test_prequalified_job_reuses_static_resume_without_llm(
+    tmp_path, valid_app_config_data,
+):
+    from bot.bot import _generate_docs
+    from bot.search.base import RawJob
+
+    resume = tmp_path / "resume.pdf"
+    resume.write_bytes(b"%PDF-test")
+    config = AppConfig(**valid_app_config_data)
+    config.profile.fallback_resume_path = str(resume)
+    config.bot.cover_letter_enabled = False
+    raw = RawJob(
+        title="Software Engineer", company="Example", location="Remote",
+        salary=None, description="Software", apply_url="https://jobs.lever.co/acme/1",
+        platform="career_ops", external_id="career-ops-test", posted_at=None,
+        prequalified=True,
+    )
+    scored = ScoredJob(id="1", raw=raw, score=100, pass_filter=True, skip_reason=None)
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(
+            "core.ai_engine.generate_documents",
+            lambda **kwargs: pytest.fail("CareerOps must not call the LLM document generator"),
+        )
+        generated, _, cover_letter, meta = _generate_docs(
+            scored, config, tmp_path,
+        )
+
+    assert generated == resume.resolve()
+    assert cover_letter == ""
+    assert meta["reuse_source"] == "career_ops_static_resume"

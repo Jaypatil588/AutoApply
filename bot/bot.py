@@ -75,6 +75,14 @@ def run_bot(
     profile_dir = Path.home() / ".autoapply" / "profile"
     browser = None
 
+    if os.environ.get(QUEUE_ENV):
+        resume = config.profile.fallback_resume_path
+        if not resume:
+            raise ValueError("CareerOps run requires profile.fallback_resume_path")
+        resume_path = Path(resume).expanduser().resolve()
+        if not resume_path.is_file():
+            raise ValueError(f"CareerOps resume file does not exist: {resume_path}")
+
     def emit(event_type: str, **kwargs):
         """Emit a feed event via SocketIO and save to DB."""
         data = {"type": event_type, **kwargs}
@@ -386,14 +394,32 @@ def _generate_docs(scored: ScoredJob, config, profile_dir: Path, db=None):
       2. Fall through to LLM generation if KB assembly returns None
       3. After LLM generation, ingest new entries into KB for future reuse
     """
-    from core.ai_engine import generate_documents
-
     resume_path = None
     cl_path = None
     cover_letter_text = ""
     version_meta = None
 
     skip_cover_letter = not config.bot.cover_letter_enabled
+
+    # CareerOps has already selected the jobs. Use the one user-provided resume
+    # for every record, making this path deterministic and zero-LLM-call.
+    if scored.raw.prequalified:
+        configured_resume = config.profile.fallback_resume_path
+        if not configured_resume:
+            raise ValueError("CareerOps run requires profile.fallback_resume_path")
+        resume_path = Path(configured_resume).expanduser().resolve(strict=True)
+        cover_letter_text = "" if skip_cover_letter else config.bot.cover_letter_template
+        version_meta = {
+            "resume_md_path": "",
+            "resume_pdf_path": str(resume_path),
+            "llm_provider": None,
+            "llm_model": None,
+            "reuse_source": "career_ops_static_resume",
+            "source_entry_ids": [],
+        }
+        return resume_path, cl_path, cover_letter_text, version_meta
+
+    from core.ai_engine import generate_documents
 
     # --- Phase 1: Try KB assembly (LLM-powered with strict KB data) ---
     kb_result = _try_kb_assembly(scored, config, profile_dir)

@@ -38,7 +38,11 @@ class BambooHRApplier(BaseApplier):
                 success=False, manual_required=True,
                 error_message="BambooHR requires a resume before submission",
             )
-        if not self._safe_upload(resume_pdf_path, 'input#resume'):
+        if not self._safe_upload(resume_pdf_path, [
+            'input#resume',
+            'input[type="file"][aria-label="file-input"]',
+            'input[type="file"]',
+        ]):
             return ApplyResult(
                 success=False, manual_required=True,
                 error_message="BambooHR resume input not found",
@@ -49,14 +53,14 @@ class BambooHRApplier(BaseApplier):
         self._safe_fill('input#lastName', profile.last_name)
         self._safe_fill('input#email', profile.email)
         self._safe_fill('input#phone', profile.phone_full)
-        self._safe_fill('input#address', profile.address_line1)
-        self._safe_fill('input#city', profile.city)
-        self._safe_fill('input#zip', profile.zip_code)
+        self._safe_fill('input#address, input[name="streetAddress.value"]', profile.address_line1)
+        self._safe_fill('input#city, input[name="city.value"]', profile.city)
+        self._safe_fill('input#zip, input[name="zip.value"]', profile.zip_code)
         if profile.linkedin_url:
-            self._safe_fill('input[aria-label="LinkedIn URL"]', profile.linkedin_url)
+            self._safe_fill('input#linkedinUrl, input[aria-label="LinkedIn URL"]', profile.linkedin_url)
         if profile.portfolio_url:
             self._safe_fill(
-                'input[aria-label="Website, Blog or Portfolio"]', profile.portfolio_url,
+                'input#websiteUrl, input[aria-label="Website, Blog or Portfolio"]', profile.portfolio_url,
             )
 
         if self._detect_captcha():

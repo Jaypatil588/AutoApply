@@ -150,19 +150,6 @@ class TestBaseApplier:
         applier = TestApplier(page)
         assert applier._detect_captcha() is True
 
-    def test_resolve_captcha_waits_and_rechecks_same_page(self):
-        class TestApplier(BaseApplier):
-            def _do_apply(self, job, resume_pdf_path, cover_letter_text, profile):
-                return ApplyResult(success=True)
-
-        gate = MagicMock(return_value=True)
-        applier = TestApplier(MagicMock(), captcha_gate=gate)
-        applier._detect_captcha = MagicMock(side_effect=[True, False])
-
-        assert applier._resolve_captcha("solve it") is True
-        gate.assert_called_once_with("solve it")
-        assert applier._detect_captcha.call_count == 2
-
     def test_human_type_calls_type_per_char(self):
         class TestApplier(BaseApplier):
             def _do_apply(self, job, resume_pdf_path, cover_letter_text, profile):

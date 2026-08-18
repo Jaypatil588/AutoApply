@@ -58,7 +58,7 @@ class BambooHRApplier(BaseApplier):
                 error_message="BambooHR resume input not found",
             )
 
-        if not self._resolve_captcha("Solve the BambooHR CAPTCHA in the visible browser"):
+        if self._detect_captcha():
             return ApplyResult(
                 success=False, captcha_detected=True, manual_required=True,
                 error_message="BambooHR CAPTCHA requires manual completion",

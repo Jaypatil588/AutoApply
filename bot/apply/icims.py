@@ -51,14 +51,10 @@ class ICIMSApplier(BaseApplier):
                     error_message="iCIMS content iframe disappeared",
                 )
             if self._frame_has_captcha(frame):
-                if self._captcha_gate is None or not self._captcha_gate(
-                    "Solve the iCIMS CAPTCHA in the visible browser",
-                ):
-                    return ApplyResult(
-                        success=False, captcha_detected=True, manual_required=True,
-                        error_message="iCIMS CAPTCHA requires manual completion",
-                    )
-                continue
+                return ApplyResult(
+                    success=False, captcha_detected=True, manual_required=True,
+                    error_message="iCIMS CAPTCHA requires manual completion",
+                )
             if self._is_confirmed(frame):
                 return ApplyResult(success=True)
 

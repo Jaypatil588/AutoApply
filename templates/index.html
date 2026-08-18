@@ -451,19 +451,19 @@
           <div style="font-size:.85rem;"><strong data-i18n="login_gate.type_label">Type:</strong> <span id="login-gate-type"></span></div>
           <div style="font-size:.85rem; margin-top:4px;" class="hidden"><a id="login-gate-url" href="#" target="_blank" rel="noopener" data-i18n="login_gate.open_portal">Open portal</a></div>
         </div>
-        <p id="login-gate-save-hint" class="text-dim" style="font-size:.85rem; margin-bottom:12px;" data-i18n="login_gate.save_hint">
+        <p class="text-dim" style="font-size:.85rem; margin-bottom:12px;" data-i18n="login_gate.save_hint">
           Optionally save your credentials below for future auto-login:
         </p>
-        <div id="login-gate-username-group" class="form-group" style="margin-bottom:12px;">
+        <div class="form-group" style="margin-bottom:12px;">
           <label for="login-gate-username" data-i18n="login_gate.username_label">Username / Email</label>
           <input type="text" class="form-control" id="login-gate-username" autocomplete="username">
         </div>
-        <div id="login-gate-password-group" class="form-group" style="margin-bottom:20px;">
+        <div class="form-group" style="margin-bottom:20px;">
           <label for="login-gate-password" data-i18n="login_gate.password_label">Password</label>
           <input type="password" class="form-control" id="login-gate-password" autocomplete="current-password">
         </div>
         <div class="flex gap-sm">
-          <button id="login-gate-done" class="btn btn-success" onclick="loginGateDone()" data-i18n="login_gate.done_button">I've Logged In</button>
+          <button class="btn btn-success" onclick="loginGateDone()" data-i18n="login_gate.done_button">I've Logged In</button>
           <button class="btn btn-ghost" onclick="loginGateSkip()" data-i18n="login_gate.skip_button">Skip This Job</button>
         </div>
       </div>

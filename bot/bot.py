@@ -244,7 +244,7 @@ def run_bot(
 
                         result = _apply_to_job(
                             scored, resume_path, cover_letter_text, config, page,
-                            db=db, state=state, emit=emit,
+                            db=db,
                         )
 
                         # Login gate — pause for user to log in (FR-089)
@@ -288,7 +288,7 @@ def run_bot(
                             # User logged in — retry the application
                             result = _apply_to_job(
                                 scored, resume_path, cover_letter_text, config, page,
-                                db=db, state=state, emit=emit,
+                                db=db,
                             )
 
                         # Save to DB
@@ -550,9 +550,7 @@ def _ingest_llm_output(resume_path, config, db) -> None:
         logger.debug("LLM resume ingestion skipped: %s", e)
 
 
-def _apply_to_job(
-    scored, resume_path, cover_letter_text, config, page, db=None, state=None, emit=None,
-):
+def _apply_to_job(scored, resume_path, cover_letter_text, config, page, db=None):
     """Apply to a job using the appropriate platform applier.
 
     Integrates portal auth: detects login walls after navigation,
@@ -613,26 +611,7 @@ def _apply_to_job(
                 error_message=f"Login required at {domain} (first visit)",
             )
 
-    def captcha_gate(message: str) -> bool:
-        if state is None or emit is None:
-            return False
-        from core.portal_auth import PortalAuthManager
-
-        domain = PortalAuthManager.extract_domain(scored.raw.apply_url)
-        emit(
-            "CAPTCHA_REQUIRED",
-            job_title=scored.raw.title,
-            company=scored.raw.company,
-            platform=scored.raw.platform,
-            domain=domain,
-            portal_type="captcha",
-            apply_url=scored.raw.apply_url,
-            message=message,
-        )
-        state.begin_login_gate(domain, "captcha", scored.raw.apply_url)
-        return state.wait_for_login() == "done"
-
-    applier = applier_cls(page, captcha_gate=captcha_gate)
+    applier = applier_cls(page)
     return applier.apply(scored, resume_path, cover_letter_text, config.profile)
 
 

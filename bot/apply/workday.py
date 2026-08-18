@@ -35,7 +35,7 @@ class WorkdayApplier(BaseApplier):
         self._safe_goto(job.raw.apply_url)
         self._random_pause(2, 4)
 
-        if not self._resolve_captcha("Solve the Workday CAPTCHA in the visible browser"):
+        if self._detect_captcha():
             return ApplyResult(
                 success=False, captcha_detected=True,
                 error_message="CAPTCHA detected",
@@ -58,7 +58,7 @@ class WorkdayApplier(BaseApplier):
         for step in range(max_steps):
             self._random_pause(1, 2)
 
-            if not self._resolve_captcha("Solve the Workday CAPTCHA in the visible browser"):
+            if self._detect_captcha():
                 return ApplyResult(
                     success=False, captcha_detected=True,
                     error_message="CAPTCHA detected in application form",

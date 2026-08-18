@@ -6,15 +6,6 @@ import { t } from './i18n.js';
 
 export function showLoginGateModal(ctx) {
   const modal = document.getElementById('modal-login-gate');
-  const isCaptcha = ctx.portal_type === 'captcha';
-  document.getElementById('login-gate-title').textContent = isCaptcha ? 'CAPTCHA Required' : t('login_gate.title');
-  document.getElementById('login-gate-desc').textContent = isCaptcha
-    ? 'Solve the CAPTCHA in the visible application browser, then continue.'
-    : t('login_gate.description');
-  document.getElementById('login-gate-done').textContent = isCaptcha ? 'CAPTCHA Solved' : t('login_gate.done_button');
-  for (const id of ['login-gate-save-hint', 'login-gate-username-group', 'login-gate-password-group']) {
-    document.getElementById(id).classList.toggle('hidden', isCaptcha);
-  }
   document.getElementById('login-gate-domain').textContent = ctx.domain || t('login_gate.unknown');
   document.getElementById('login-gate-type').textContent = ctx.portal_type || 'generic';
   if (ctx.url) {

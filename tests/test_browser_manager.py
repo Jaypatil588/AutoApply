@@ -273,7 +273,7 @@ class TestBrowserManagerRealInit:
         with patch("bot.browser.Path.home", return_value=tmp_path):
             bm = BrowserManager(config)
 
-        assert bm.headless is True
+        assert bm.headless is False
         assert bm._playwright is None
         assert bm._context is None
         assert bm._page is None
@@ -299,7 +299,7 @@ class TestBrowserManagerRealInit:
         with patch("bot.browser.Path.home", return_value=tmp_path):
             bm = BrowserManager(config)
 
-        assert bm.headless is True
+        assert bm.headless is False
         assert bm.profile_dir == tmp_path / ".autoapply" / "browser_profile"
 
 

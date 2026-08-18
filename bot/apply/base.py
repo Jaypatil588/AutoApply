@@ -190,6 +190,7 @@ class BaseApplier(ABC):
                     return True
                 except Exception as e:
                     logger.warning("Resume upload failed via %s: %s", selector, e)
+                    return False
         return False
 
     def _safe_click(self, selector: str, timeout: int | None = None) -> bool:

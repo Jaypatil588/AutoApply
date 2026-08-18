@@ -50,11 +50,7 @@ class AshbyApplier(BaseApplier):
         self._fill_form_fields(profile)
 
         if resume_pdf_path:
-            self._safe_upload(resume_pdf_path, [
-                'input[type="file"][name*="resume"]',
-                'input[type="file"][accept*="pdf"]',
-                'input[type="file"]',
-            ])
+            self._upload_resume(resume_pdf_path)
 
         self._fill_cover_letter(cover_letter_text)
         self._answer_custom_questions(profile)
@@ -100,8 +96,18 @@ class AshbyApplier(BaseApplier):
                 error_message=f"Ashby form error: {error_text}",
             )
 
-        # No clear success or error — assume success if no error visible
-        return ApplyResult(success=True)
+        return ApplyResult(
+            success=False,
+            manual_required=True,
+            error_message="Ashby submit clicked but no confirmation was detected",
+        )
+
+    def _upload_resume(self, resume_pdf_path) -> bool:
+        return self._safe_upload(resume_pdf_path, [
+            'input[type="file"][name*="resume"]',
+            'input[type="file"][accept*="pdf"]',
+            'input[type="file"]',
+        ])
 
     def _fill_form_fields(self, profile) -> None:
         """Fill Ashby personal info fields."""

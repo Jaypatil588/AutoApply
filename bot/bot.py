@@ -7,6 +7,7 @@ Implements: FR-042 (bot main loop), FR-050 (search-filter-generate-apply pipelin
 from __future__ import annotations
 
 import logging
+import os
 import re
 import time
 from datetime import datetime, timezone
@@ -14,15 +15,18 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from bot.apply.ashby import AshbyApplier
+from bot.apply.bamboohr import BambooHRApplier
 from bot.apply.base import ApplyResult, BaseApplier
 from bot.apply.greenhouse import GreenhouseApplier
 from bot.apply.indeed import IndeedApplier
+from bot.apply.icims import ICIMSApplier
 from bot.apply.lever import LeverApplier
 from bot.apply.linkedin import LinkedInApplier
 from bot.apply.workday import WorkdayApplier
 from bot.browser import BrowserManager
 from bot.search.indeed import IndeedSearcher
 from bot.search.linkedin import LinkedInSearcher
+from bot.search.career_ops import CareerOpsSearcher, QUEUE_ENV
 from core.filter import ScoredJob, detect_ats, score_job
 
 if TYPE_CHECKING:
@@ -33,6 +37,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 SEARCHERS = {
+    "career_ops": CareerOpsSearcher,
     "linkedin": LinkedInSearcher,
     "indeed": IndeedSearcher,
 }
@@ -44,6 +49,8 @@ APPLIERS: dict[str, type[BaseApplier]] = {
     "lever": LeverApplier,
     "workday": WorkdayApplier,
     "ashby": AshbyApplier,
+    "bamboohr": BambooHRApplier,
+    "icims": ICIMSApplier,
 }
 
 
@@ -91,15 +98,20 @@ def run_bot(
         browser = BrowserManager(config)
         page = browser.get_page()
 
-        enabled_searchers = [
-            SEARCHERS[p]()
-            for p in config.bot.enabled_platforms
-            if p in SEARCHERS
-        ]
+        if os.environ.get(QUEUE_ENV):
+            enabled_searchers = [CareerOpsSearcher()]
+        else:
+            enabled_searchers = [
+                SEARCHERS[p]()
+                for p in config.bot.enabled_platforms
+                if p in SEARCHERS
+            ]
 
         if not enabled_searchers:
             logger.warning("No enabled search platforms configured")
             return
+
+        one_shot = all(getattr(searcher, "one_shot", False) for searcher in enabled_searchers)
 
         while not state.stop_flag:
             _wait_while_paused(state)
@@ -319,6 +331,9 @@ def run_bot(
                         "ERROR",
                         message=f"Search cycle error: {e}",
                     )
+
+            if one_shot:
+                return
 
             # Wait for next search interval
             if not state.stop_flag:

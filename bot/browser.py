@@ -46,7 +46,10 @@ class BrowserManager:
     """
 
     def __init__(self, config: "AppConfig") -> None:
-        self.headless = config.bot.apply_mode != "watch"
+        del config
+        # Application automation is always observable. Review/full-auto controls
+        # submission gating; neither mode is allowed to hide the browser.
+        self.headless = False
         self.profile_dir = Path.home() / ".autoapply" / "browser_profile"
         self.profile_dir.mkdir(parents=True, exist_ok=True)
 

@@ -91,7 +91,19 @@ class GreenhouseApplier(BaseApplier):
                 error_message=f"Greenhouse form error: {error_text}",
             )
 
-        return ApplyResult(success=True)
+        success_el = self._wait_and_query(
+            'text="Application submitted", text="Thank you for applying", '
+            'h1:has-text("Thank you"), h2:has-text("Thank you")',
+            timeout=5000,
+        )
+        if success_el:
+            return ApplyResult(success=True)
+
+        return ApplyResult(
+            success=False,
+            manual_required=True,
+            error_message="Greenhouse submit clicked but no confirmation was detected",
+        )
 
     def _fill_form_fields(self, profile) -> None:
         """Fill Greenhouse standard personal info fields."""

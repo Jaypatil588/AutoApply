@@ -307,13 +307,17 @@ class TestPipelineRegistration:
         from bot.bot import SEARCHERS
         assert "linkedin" in SEARCHERS
         assert "indeed" in SEARCHERS
-        assert len(SEARCHERS) == 2
+        assert "career_ops" in SEARCHERS
+        assert len(SEARCHERS) == 3
 
     def test_all_appliers_registered(self):
         from bot.bot import APPLIERS
-        expected = {"linkedin", "indeed", "greenhouse", "lever", "workday", "ashby"}
+        expected = {
+            "linkedin", "indeed", "greenhouse", "lever", "workday", "ashby",
+            "bamboohr", "icims",
+        }
         assert set(APPLIERS.keys()) == expected
-        assert len(APPLIERS) == 6
+        assert len(APPLIERS) == 8
 
     def test_searcher_classes_are_base_searcher_subclasses(self):
         from bot.bot import SEARCHERS

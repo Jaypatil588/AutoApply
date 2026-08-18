@@ -38,6 +38,7 @@ ATS_FINGERPRINTS = {
     "ashbyhq.com": "ashby",
     "taleo.net": "taleo",
     "icims.com": "icims",
+    "bamboohr.com": "bamboohr",
     "linkedin.com/jobs": "linkedin",
     "linkedin.com": "linkedin",
     "indeed.com": "indeed",
@@ -111,6 +112,15 @@ def score_job(
                 pass_filter=False,
                 skip_reason=f"Blacklisted company: {blacklisted}",
             )
+
+    # CareerOps has already applied its explicit title, freshness, seniority,
+    # and experience gates. Preserve deduplication and user blacklist checks,
+    # then pass the listing directly to the existing ATS applier pipeline.
+    if raw_job.prequalified:
+        return ScoredJob(
+            id=job_id, raw=raw_job, score=100,
+            pass_filter=True, skip_reason=None,
+        )
 
     # Exclude keywords
     for kw in criteria.keywords_exclude:

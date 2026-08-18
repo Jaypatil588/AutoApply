@@ -1123,8 +1123,8 @@ class TestAshbyCoverageGaps:
         apply_btn.click.assert_called_once()
 
     @patch("bot.apply.base.time.sleep")
-    def test_no_success_no_error_returns_success(self, _sleep):
-        """Line 141: no success indicator and no error — assumes success."""
+    def test_no_success_no_error_requires_manual_review(self, _sleep):
+        """A click without confirmation must never be recorded as success."""
         page = _make_page("https://jobs.ashbyhq.com/acme/app/123")
         submit_btn = MagicMock()
 
@@ -1137,7 +1137,8 @@ class TestAshbyCoverageGaps:
         applier = AshbyApplier(page)
         job = _make_scored_job("https://jobs.ashbyhq.com/acme/app/123", "ashby")
         result = applier.apply(job, None, "", _make_profile())
-        assert result.success is True
+        assert result.success is False
+        assert result.manual_required is True
 
     @patch("bot.apply.base.time.sleep")
     def test_fill_form_skips_empty_value(self, _sleep):

@@ -130,11 +130,20 @@ def _parse_args() -> argparse.Namespace:
         "--no-browser", action="store_true",
         help="Start server without opening a browser (headless mode)",
     )
+    parser.add_argument(
+        "--career-ops-queue",
+        type=Path,
+        help="Use a CareerOps discovered-jobs.json file as the one-shot job source",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = _parse_args()
+
+    if args.career_ops_queue:
+        queue_path = args.career_ops_queue.expanduser().resolve(strict=True)
+        os.environ["AUTOAPPLY_CAREER_OPS_QUEUE"] = str(queue_path)
 
     env_port = os.environ.get("AUTOAPPLY_PORT")
     if env_port:

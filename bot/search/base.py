@@ -26,6 +26,7 @@ class RawJob:
     platform: str  # "linkedin" | "indeed"
     external_id: str  # Platform-specific ID for deduplication
     posted_at: str | None
+    prequalified: bool = False
 
 
 class BaseSearcher(ABC):

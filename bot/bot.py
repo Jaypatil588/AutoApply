@@ -75,7 +75,8 @@ def run_bot(
     profile_dir = Path.home() / ".autoapply" / "profile"
     browser = None
 
-    if os.environ.get(QUEUE_ENV):
+    career_ops_run = bool(os.environ.get(QUEUE_ENV))
+    if career_ops_run:
         resume = config.profile.fallback_resume_path
         if not resume:
             raise ValueError("CareerOps run requires profile.fallback_resume_path")
@@ -106,7 +107,7 @@ def run_bot(
         browser = BrowserManager(config)
         page = browser.get_page()
 
-        if os.environ.get(QUEUE_ENV):
+        if career_ops_run:
             enabled_searchers = [CareerOpsSearcher()]
         else:
             enabled_searchers = [
@@ -149,7 +150,7 @@ def run_bot(
                         )
 
                         # Check daily limit
-                        if state.applied_today >= config.bot.max_applications_per_day:
+                        if _daily_limit_reached(state, config, career_ops_run):
                             logger.info(
                                 "Daily limit reached (%d). Waiting for next cycle.",
                                 config.bot.max_applications_per_day,
@@ -373,6 +374,14 @@ def _interruptible_sleep(state: "BotState", seconds: int) -> None:
         if state.stop_flag:
             return
         time.sleep(1)
+
+
+def _daily_limit_reached(state: "BotState", config: "AppConfig", career_ops_run: bool) -> bool:
+    """Do not truncate an explicit one-shot CareerOps queue at the generic limit."""
+    return (
+        not career_ops_run
+        and state.applied_today >= config.bot.max_applications_per_day
+    )
 
 
 def _wait_for_review(state: "BotState") -> tuple[str, str | None]:

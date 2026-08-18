@@ -137,3 +137,18 @@ def test_prequalified_job_reuses_static_resume_without_llm(
     assert generated == resume.resolve()
     assert cover_letter == ""
     assert meta["reuse_source"] == "career_ops_static_resume"
+
+
+def test_career_ops_run_is_not_capped_by_default_daily_limit(
+    valid_app_config_data,
+):
+    """The explicit one-shot queue must be allowed to process all 93 records."""
+    from bot.bot import _daily_limit_reached
+    from bot.state import BotState
+
+    config = AppConfig(**valid_app_config_data)
+    config.bot.max_applications_per_day = 0
+    state = BotState()
+
+    assert _daily_limit_reached(state, config, career_ops_run=True) is False
+    assert _daily_limit_reached(state, config, career_ops_run=False) is True

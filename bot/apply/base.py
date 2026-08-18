@@ -46,8 +46,9 @@ class BaseApplier(ABC):
     # Default timeout (ms) for page navigation
     NAV_TIMEOUT: int = 30000
 
-    def __init__(self, page) -> None:
+    def __init__(self, page, captcha_gate=None) -> None:
         self.page = page
+        self._captcha_gate = captcha_gate
 
     @abstractmethod
     def _do_apply(
@@ -141,6 +142,14 @@ class BaseApplier(ABC):
             if self.page.query_selector(selector):
                 return True
         return False
+
+    def _resolve_captcha(self, message: str = "CAPTCHA detected") -> bool:
+        """Pause for visible manual completion and verify the challenge cleared."""
+        if not self._detect_captcha():
+            return True
+        if self._captcha_gate is None or not self._captcha_gate(message):
+            return False
+        return not self._detect_captcha()
 
     def _safe_goto(self, url: str, **kwargs) -> None:
         """Navigate to URL with configurable timeout and wait."""

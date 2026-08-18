@@ -32,7 +32,7 @@ class LeverApplier(BaseApplier):
         self._safe_goto(apply_url)
         self._random_pause(1, 3)
 
-        if self._detect_captcha():
+        if not self._resolve_captcha("Solve the Lever CAPTCHA in the visible browser"):
             return ApplyResult(
                 success=False, captcha_detected=True,
                 error_message="CAPTCHA detected",

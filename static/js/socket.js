@@ -61,6 +61,9 @@ function handleFeedEvent(evt) {
   if (evt.type === 'LOGIN_REQUIRED') {
     showLoginGateModal({ domain: evt.domain, portal_type: evt.portal_type, url: evt.apply_url });
   }
+  if (evt.type === 'CAPTCHA_REQUIRED') {
+    showLoginGateModal({ domain: evt.domain, portal_type: 'captcha', url: evt.apply_url });
+  }
   // Hide review card on APPLIED, SKIPPED, or ERROR for the same job
   if (['APPLIED', 'SKIPPED', 'ERROR'].includes(evt.type)) {
     hideReviewCard();

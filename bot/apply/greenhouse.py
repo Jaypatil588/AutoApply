@@ -28,7 +28,7 @@ class GreenhouseApplier(BaseApplier):
         self._safe_goto(job.raw.apply_url)
         self._random_pause(1, 3)
 
-        if self._detect_captcha():
+        if not self._resolve_captcha("Solve the Greenhouse CAPTCHA in the visible browser"):
             return ApplyResult(
                 success=False, captcha_detected=True,
                 error_message="CAPTCHA detected",

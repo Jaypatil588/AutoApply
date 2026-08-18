@@ -1029,7 +1029,7 @@ class TestAshbyCustomQuestions:
         inp.evaluate.return_value = "input"
 
         def qs(selector):
-            if "#exp-input" in selector:
+            if '[id="exp-input"]' in selector:
                 return inp
             return None
 
@@ -1052,7 +1052,7 @@ class TestAshbyCustomQuestions:
         sel.evaluate.return_value = "select"
 
         def qs(selector):
-            if "#auth-sel" in selector:
+            if '[id="auth-sel"]' in selector:
                 return sel
             return None
 
@@ -1075,7 +1075,7 @@ class TestAshbyCustomQuestions:
         ta.evaluate.return_value = "textarea"
 
         def qs(selector):
-            if "#about-ta" in selector:
+            if '[id="about-ta"]' in selector:
                 return ta
             return None
 

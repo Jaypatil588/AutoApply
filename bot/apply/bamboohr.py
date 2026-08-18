@@ -33,6 +33,18 @@ class BambooHRApplier(BaseApplier):
         apply_button.click()
         self._random_pause(1, 2)
 
+        if not resume_pdf_path:
+            return ApplyResult(
+                success=False, manual_required=True,
+                error_message="BambooHR requires a resume before submission",
+            )
+        if not self._safe_upload(resume_pdf_path, 'input#resume'):
+            return ApplyResult(
+                success=False, manual_required=True,
+                error_message="BambooHR resume input not found",
+            )
+        self._random_pause(2, 3)
+
         self._safe_fill('input#firstName', profile.first_name)
         self._safe_fill('input#lastName', profile.last_name)
         self._safe_fill('input#email', profile.email)
@@ -45,17 +57,6 @@ class BambooHRApplier(BaseApplier):
         if profile.portfolio_url:
             self._safe_fill(
                 'input[aria-label="Website, Blog or Portfolio"]', profile.portfolio_url,
-            )
-
-        if not resume_pdf_path:
-            return ApplyResult(
-                success=False, manual_required=True,
-                error_message="BambooHR requires a resume before submission",
-            )
-        if not self._safe_upload(resume_pdf_path, 'input#resume'):
-            return ApplyResult(
-                success=False, manual_required=True,
-                error_message="BambooHR resume input not found",
             )
 
         if self._detect_captcha():

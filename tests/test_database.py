@@ -32,8 +32,6 @@ Uses tmp_path for full isolation — no shared database state between tests.
 from __future__ import annotations
 
 import csv
-import sqlite3
-
 import pytest
 
 from db.database import Database
@@ -122,13 +120,22 @@ class TestSaveApplication:
         assert isinstance(row_id, int)
         assert row_id > 0
 
-    def test_save_application_duplicate_raises_integrity_error(self, db: Database):
-        """AC-004-N1: Inserting the same (external_id, platform) pair twice raises IntegrityError."""
-        # Arrange
-        insert_sample(db, external_id="dup1", platform="linkedin")
-        # Act / Assert
-        with pytest.raises(sqlite3.IntegrityError):
-            insert_sample(db, external_id="dup1", platform="linkedin")
+    def test_save_application_retry_updates_existing_row(self, db: Database):
+        """A retry replaces its failed row instead of being blocked by dedup."""
+        first_id = insert_sample(
+            db, external_id="dup1", platform="linkedin",
+            status="error", error_message="first attempt failed",
+        )
+        retry_id = insert_sample(
+            db, external_id="dup1", platform="linkedin",
+            status="applied", error_message=None,
+        )
+
+        assert retry_id == first_id
+        saved = db.get_application(first_id)
+        assert saved is not None
+        assert saved.status == "applied"
+        assert saved.error_message is None
 
 
 # ---------------------------------------------------------------------------

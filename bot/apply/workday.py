@@ -74,8 +74,8 @@ class WorkdayApplier(BaseApplier):
                 logger.warning("Workday form error on step %d: %s", step, error_text)
 
             # Fill whichever section is currently visible
-            self._fill_my_information(profile)
             self._fill_my_experience(profile, resume_pdf_path)
+            self._fill_my_information(profile)
             self._fill_application_questions(profile, cover_letter_text)
             self._fill_voluntary_disclosures(profile)
             self._fill_self_identification(profile)

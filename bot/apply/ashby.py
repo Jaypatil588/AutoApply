@@ -47,10 +47,11 @@ class AshbyApplier(BaseApplier):
         )
         self._random_pause(1, 2)
 
-        self._fill_form_fields(profile)
-
         if resume_pdf_path:
             self._upload_resume(resume_pdf_path)
+            self._random_pause(2, 3)
+
+        self._fill_form_fields(profile)
 
         self._fill_cover_letter(cover_letter_text)
         self._answer_custom_questions(profile)
@@ -200,14 +201,29 @@ class AshbyApplier(BaseApplier):
                 if key_lower in label_text or label_text in key_lower:
                     label_for = label.get_attribute("for")
                     if label_for:
-                        inp = page.query_selector(f"#{label_for}")
-                        if inp and inp.is_visible() and not inp.input_value():
+                        escaped_id = label_for.replace("\\", "\\\\").replace('"', '\\"')
+                        inp = page.query_selector(f'[id="{escaped_id}"]')
+                        if inp and inp.is_visible():
                             tag = inp.evaluate("el => el.tagName.toLowerCase()")
                             if tag == "select":
-                                inp.select_option(label=value)
+                                if not inp.input_value():
+                                    inp.select_option(label=value)
                             elif tag == "textarea":
-                                inp.fill(value)
+                                if not inp.input_value():
+                                    inp.fill(value)
+                            elif tag == "button":
+                                button_text = inp.inner_text().strip().lower()
+                                if not button_text or any(
+                                    marker in button_text for marker in ("select", "choose", "--")
+                                ):
+                                    inp.click()
+                                    option = page.get_by_role(
+                                        "option", name=str(value), exact=True,
+                                    ).first
+                                    if option.is_visible():
+                                        option.click()
                             else:
-                                self._human_type(inp, value)
+                                if not inp.input_value():
+                                    self._human_type(inp, value)
                             self._random_pause(0.3, 0.6)
                     break

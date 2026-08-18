@@ -44,9 +44,6 @@ class GreenhouseApplier(BaseApplier):
         )
         self._random_pause(1, 2)
 
-        # Fill personal info
-        self._fill_form_fields(profile)
-
         # Upload resume
         if resume_pdf_path:
             self._safe_upload(resume_pdf_path, [
@@ -55,6 +52,10 @@ class GreenhouseApplier(BaseApplier):
                 "input[type='file'][data-field*='resume']",
                 "input[type='file']",
             ])
+            self._random_pause(2, 3)
+
+        # Fill only personal-info fields left empty by resume parsing
+        self._fill_form_fields(profile)
 
         # Fill cover letter
         self._fill_cover_letter(cover_letter_text)

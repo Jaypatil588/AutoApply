@@ -58,12 +58,14 @@ class ICIMSApplier(BaseApplier):
             if self._is_confirmed(frame):
                 return ApplyResult(success=True)
 
-            changed = self._fill_identity(frame, profile)
+            changed = False
             if resume_pdf_path:
                 resume = frame.query_selector('input[name*="resume" i][type="file"]')
                 if resume:
                     resume.set_input_files(str(resume_pdf_path))
+                    self._random_pause(2, 3)
                     changed = True
+            changed = self._fill_identity(frame, profile) or changed
 
             submit = frame.query_selector('input[type="submit"][value*="Submit" i]')
             if submit and submit.is_visible():

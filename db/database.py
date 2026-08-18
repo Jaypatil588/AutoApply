@@ -244,13 +244,28 @@ class Database:
         description_path: str | None = None,
     ) -> int:
         with self._connect() as conn:
-            cursor = conn.execute(
+            conn.execute(
                 """
                 INSERT INTO applications (
                     external_id, platform, job_title, company, location, salary,
                     apply_url, match_score, resume_path, cover_letter_path,
                     cover_letter_text, description_path, status, error_message
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(external_id, platform) DO UPDATE SET
+                    job_title = excluded.job_title,
+                    company = excluded.company,
+                    location = excluded.location,
+                    salary = excluded.salary,
+                    apply_url = excluded.apply_url,
+                    match_score = excluded.match_score,
+                    resume_path = excluded.resume_path,
+                    cover_letter_path = excluded.cover_letter_path,
+                    cover_letter_text = excluded.cover_letter_text,
+                    description_path = excluded.description_path,
+                    status = excluded.status,
+                    error_message = excluded.error_message,
+                    applied_at = CURRENT_TIMESTAMP,
+                    updated_at = CURRENT_TIMESTAMP
                 """,
                 (
                     external_id, platform, job_title, company, location, salary,
@@ -258,7 +273,11 @@ class Database:
                     cover_letter_text, description_path, status, error_message,
                 ),
             )
-            return cursor.lastrowid  # type: ignore[return-value]
+            row = conn.execute(
+                "SELECT id FROM applications WHERE external_id = ? AND platform = ?",
+                (external_id, platform),
+            ).fetchone()
+            return int(row[0])
 
     def update_status(self, application_id: int, status: str, notes: str | None = None) -> None:
         with self._connect() as conn:
@@ -311,7 +330,9 @@ class Database:
     def exists(self, external_id: str, platform: str) -> bool:
         with self._connect() as conn:
             row = conn.execute(
-                "SELECT 1 FROM applications WHERE external_id = ? AND platform = ?",
+                """SELECT 1 FROM applications
+                   WHERE external_id = ? AND platform = ?
+                     AND status NOT IN ('error', 'manual_required')""",
                 (external_id, platform),
             ).fetchone()
             return row is not None

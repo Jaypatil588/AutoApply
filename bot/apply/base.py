@@ -158,23 +158,18 @@ class BaseApplier(ABC):
             return None
 
     def _safe_fill(self, selector: str, value: str, clear_first: bool = True) -> bool:
-        """Find an element, optionally clear it, then fill. Returns True if filled."""
+        """Fill an empty field only; preserve every ATS/resume-prefilled value."""
+        del clear_first
         if not value:
             return False
         el = self.page.query_selector(selector)
         if not el or not el.is_visible():
             return False
-        if clear_first:
-            current = el.input_value()
-            if current and current == value:
-                return False  # already has correct value
-            if current:
-                el.fill("")  # clear before filling
-        if not el.input_value():
-            self._human_type(el, value)
-            self._random_pause(0.2, 0.5)
-            return True
-        return False
+        if el.input_value():
+            return False
+        self._human_type(el, value)
+        self._random_pause(0.2, 0.5)
+        return True
 
     def _safe_upload(self, resume_path: Path, selectors: str | list[str]) -> bool:
         """Upload a file via file input. Returns True if uploaded successfully."""

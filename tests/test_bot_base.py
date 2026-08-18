@@ -180,3 +180,20 @@ class TestBaseApplier:
             mock_sleep.assert_called_once()
             call_arg = mock_sleep.call_args[0][0]
             assert 0.1 <= call_arg <= 0.2
+
+    def test_safe_fill_never_overwrites_resume_prefill(self):
+        class TestApplier(BaseApplier):
+            def _do_apply(self, job, resume_pdf_path, cover_letter_text, profile):
+                return ApplyResult(success=True)
+
+        page = MagicMock()
+        field = MagicMock()
+        field.is_visible.return_value = True
+        field.input_value.return_value = "Already parsed from resume"
+        page.query_selector.return_value = field
+
+        changed = TestApplier(page)._safe_fill("input[name='name']", "Jay Patil")
+
+        assert changed is False
+        field.fill.assert_not_called()
+        field.type.assert_not_called()

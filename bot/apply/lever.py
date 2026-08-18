@@ -52,14 +52,15 @@ class LeverApplier(BaseApplier):
                 error_message="Lever application form not found",
             )
 
-        self._fill_form_fields(profile)
-
         if resume_pdf_path:
             self._safe_upload(resume_pdf_path, [
                 "input[type='file'][name='resume']",
                 "input[type='file'][name*='resume']",
                 "input[type='file']",
             ])
+            self._random_pause(2, 3)
+
+        self._fill_form_fields(profile)
 
         self._fill_cover_letter(cover_letter_text)
         self._random_pause(0.5, 1)

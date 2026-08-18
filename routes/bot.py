@@ -41,6 +41,9 @@ def _scheduler_start_bot() -> str:
     """Start bot thread. Returns 'started', 'already_running', or 'no_config'."""
     with app_state.bot_lock:
         if app_state.bot_thread and app_state.bot_thread.is_alive():
+            if app_state.bot_state.status == "paused":
+                app_state.bot_state.resume()
+                return "resumed"
             return "already_running"
         config = load_config()
         if config is None:
@@ -116,7 +119,7 @@ def bot_start():
         return jsonify({"error": t("errors.bot_already_running")}), 409
     if result == "no_config":
         return jsonify({"error": t("errors.config_not_found")}), 400
-    return jsonify({"status": "running"})
+    return jsonify({"status": "running" if result == "started" else "resumed"})
 
 
 @bot_bp.route("/api/bot/pause", methods=["POST"])

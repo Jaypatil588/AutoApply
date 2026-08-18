@@ -54,7 +54,10 @@ class AshbyApplier(BaseApplier):
         self, job, resume_pdf_path, cover_letter_text, profile
     ) -> ApplyResult:
         logger.info("Ashby: applying to %s at %s", job.raw.title, job.raw.company)
-        self._safe_goto(job.raw.apply_url)
+        application_url = job.raw.apply_url.rstrip("/")
+        if not application_url.endswith("/application"):
+            application_url = f"{application_url}/application"
+        self._safe_goto(application_url)
         self._random_pause(1, 3)
 
         if self._detect_captcha():
@@ -63,17 +66,12 @@ class AshbyApplier(BaseApplier):
                 error_message="CAPTCHA detected",
             )
 
-        # Only job-detail pages need an Apply click. On an application page,
-        # broad :has-text("Apply") selectors also match "Submit Application".
         if "/application" not in self.page.url.lower():
-            self._safe_click(
-                'a:text-is("Apply for this job"), '
-                'button:text-is("Apply for this job"), '
-                'a:text-is("Apply"), '
-                'button:text-is("Apply")',
-                timeout=3000,
+            return ApplyResult(
+                success=False,
+                manual_required=True,
+                error_message="Ashby application route did not load",
             )
-            self._random_pause(1, 2)
 
         if resume_pdf_path:
             self._upload_resume(resume_pdf_path)

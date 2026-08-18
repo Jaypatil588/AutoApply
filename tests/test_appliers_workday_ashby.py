@@ -805,7 +805,7 @@ class TestAshbyApplierSuccess:
 
     @patch("bot.apply.base.time.sleep")
     def test_successful_application(self, _sleep):
-        page = _make_page("https://jobs.ashbyhq.com/acme/app/123")
+        page = _make_page("https://jobs.ashbyhq.com/acme/app/123/application")
         submit_btn = MagicMock()
         success_el = MagicMock()
 
@@ -818,43 +818,43 @@ class TestAshbyApplierSuccess:
 
         page.query_selector.side_effect = qs
         applier = AshbyApplier(page)
-        job = _make_scored_job("https://jobs.ashbyhq.com/acme/app/123", "ashby")
+        job = _make_scored_job("https://jobs.ashbyhq.com/acme/app/123/application", "ashby")
         result = applier.apply(job, Path("/tmp/resume.pdf"), "cover", _make_profile())
         assert result.success is True
 
     @patch("bot.apply.base.time.sleep")
     def test_captcha_detected(self, _sleep):
-        page = _make_page("https://jobs.ashbyhq.com/acme/app/123")
+        page = _make_page("https://jobs.ashbyhq.com/acme/app/123/application")
         page.query_selector.return_value = MagicMock()
         applier = AshbyApplier(page)
-        job = _make_scored_job("https://jobs.ashbyhq.com/acme/app/123", "ashby")
+        job = _make_scored_job("https://jobs.ashbyhq.com/acme/app/123/application", "ashby")
         result = applier.apply(job, None, "", _make_profile())
         assert result.success is False
         assert result.captcha_detected is True
 
     @patch("bot.apply.base.time.sleep")
     def test_no_submit_button(self, _sleep):
-        page = _make_page("https://jobs.ashbyhq.com/acme/app/123")
+        page = _make_page("https://jobs.ashbyhq.com/acme/app/123/application")
         page.query_selector.return_value = None
         applier = AshbyApplier(page)
-        job = _make_scored_job("https://jobs.ashbyhq.com/acme/app/123", "ashby")
+        job = _make_scored_job("https://jobs.ashbyhq.com/acme/app/123/application", "ashby")
         result = applier.apply(job, None, "", _make_profile())
         assert result.success is False
         assert result.manual_required is True
 
     @patch("bot.apply.base.time.sleep")
     def test_exception_returns_failure(self, _sleep):
-        page = _make_page("https://jobs.ashbyhq.com/acme/app/123")
+        page = _make_page("https://jobs.ashbyhq.com/acme/app/123/application")
         page.goto.side_effect = Exception("Timeout")
         applier = AshbyApplier(page)
-        job = _make_scored_job("https://jobs.ashbyhq.com/acme/app/123", "ashby")
+        job = _make_scored_job("https://jobs.ashbyhq.com/acme/app/123/application", "ashby")
         result = applier.apply(job, None, "", _make_profile())
         assert result.success is False
         assert "Timeout" in result.error_message
 
     @patch("bot.apply.base.time.sleep")
     def test_form_error_after_submit(self, _sleep):
-        page = _make_page("https://jobs.ashbyhq.com/acme/app/123")
+        page = _make_page("https://jobs.ashbyhq.com/acme/app/123/application")
         submit_btn = MagicMock()
         error_el = MagicMock()
         error_el.is_visible.return_value = True
@@ -869,7 +869,7 @@ class TestAshbyApplierSuccess:
 
         page.query_selector.side_effect = qs
         applier = AshbyApplier(page)
-        job = _make_scored_job("https://jobs.ashbyhq.com/acme/app/123", "ashby")
+        job = _make_scored_job("https://jobs.ashbyhq.com/acme/app/123/application", "ashby")
         result = applier.apply(job, None, "", _make_profile())
         assert result.success is False
         assert "Ashby form error" in result.error_message
@@ -1098,9 +1098,9 @@ class TestAshbyCoverageGaps:
     """ME-5: Cover remaining branches in AshbyApplier."""
 
     @patch("bot.apply.base.time.sleep")
-    def test_apply_button_clicked_on_detail_page(self, _sleep):
-        """Lines 82-83: Apply button visible on job detail page."""
-        page = _make_page("https://jobs.ashbyhq.com/acme/app/123")
+    def test_uses_direct_application_route(self, _sleep):
+        """Overview URLs are normalized to Ashby's application route."""
+        page = _make_page("https://jobs.ashbyhq.com/acme/app/123/application")
         apply_btn = MagicMock()
         apply_btn.is_visible.return_value = True
         submit_btn = MagicMock()
@@ -1117,15 +1117,15 @@ class TestAshbyCoverageGaps:
 
         page.query_selector.side_effect = qs
         applier = AshbyApplier(page)
-        job = _make_scored_job("https://jobs.ashbyhq.com/acme/app/123", "ashby")
+        job = _make_scored_job("https://jobs.ashbyhq.com/acme/app/123/application", "ashby")
         result = applier.apply(job, None, "", _make_profile())
         assert result.success is True
-        apply_btn.click.assert_called_once()
+        apply_btn.click.assert_not_called()
 
     @patch("bot.apply.base.time.sleep")
     def test_no_success_no_error_requires_manual_review(self, _sleep):
         """A click without confirmation must never be recorded as success."""
-        page = _make_page("https://jobs.ashbyhq.com/acme/app/123")
+        page = _make_page("https://jobs.ashbyhq.com/acme/app/123/application")
         submit_btn = MagicMock()
 
         def qs(selector):
@@ -1135,7 +1135,7 @@ class TestAshbyCoverageGaps:
 
         page.query_selector.side_effect = qs
         applier = AshbyApplier(page)
-        job = _make_scored_job("https://jobs.ashbyhq.com/acme/app/123", "ashby")
+        job = _make_scored_job("https://jobs.ashbyhq.com/acme/app/123/application", "ashby")
         result = applier.apply(job, None, "", _make_profile())
         assert result.success is False
         assert result.manual_required is True
@@ -1224,4 +1224,4 @@ class TestAshbyRegistration:
 
     def test_ats_detection_routes_to_ashby(self):
         from core.filter import detect_ats
-        assert detect_ats("https://jobs.ashbyhq.com/acme/app/123") == "ashby"
+        assert detect_ats("https://jobs.ashbyhq.com/acme/app/123/application") == "ashby"

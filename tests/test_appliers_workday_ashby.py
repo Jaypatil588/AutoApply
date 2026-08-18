@@ -810,7 +810,7 @@ class TestAshbyApplierSuccess:
         success_el = MagicMock()
 
         def qs(selector):
-            if 'type="submit"' in selector:
+            if "Submit Application" in selector:
                 return submit_btn
             if "submitted" in selector.lower() or "Thank" in selector:
                 return success_el
@@ -861,7 +861,7 @@ class TestAshbyApplierSuccess:
         error_el.inner_text.return_value = "Email is required"
 
         def qs(selector):
-            if 'type="submit"' in selector:
+            if "Submit Application" in selector:
                 return submit_btn
             if "alert" in selector or "error" in selector:
                 return error_el
@@ -1107,9 +1107,9 @@ class TestAshbyCoverageGaps:
         success_el = MagicMock()
 
         def qs(selector):
-            if "Apply" in selector and 'type="submit"' not in selector:
+            if "Apply" in selector and "Submit Application" not in selector:
                 return apply_btn
-            if 'type="submit"' in selector:
+            if "Submit Application" in selector:
                 return submit_btn
             if "submitted" in selector.lower() or "Thank" in selector:
                 return success_el
@@ -1129,7 +1129,7 @@ class TestAshbyCoverageGaps:
         submit_btn = MagicMock()
 
         def qs(selector):
-            if 'type="submit"' in selector:
+            if "Submit Application" in selector:
                 return submit_btn
             return None
 

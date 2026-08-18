@@ -49,7 +49,7 @@ def capture_failed_form(page, *, platform: str, external_id: str, reason: str) -
                 ? [...el.options].map(x => (x.textContent || '').trim()).slice(0, 40)
                 : []
             }));
-          return {html: '<!doctype html>\n' + clone.outerHTML, controls};
+          return {html: '<!doctype html>' + String.fromCharCode(10) + clone.outerHTML, controls};
         }"""
     )
     dom_path.write_text(snapshot["html"], encoding="utf-8")

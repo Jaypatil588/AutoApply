@@ -88,8 +88,7 @@ class AshbyApplier(BaseApplier):
 
         # Submit
         submit_btn = self._wait_and_query(
-            'button[type="submit"]:text-is("Submit Application"), '
-            'button:text-is("Submit Application")',
+            'button:has-text("Submit Application")',
             timeout=5000,
         )
 

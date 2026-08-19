@@ -376,6 +376,14 @@ def run_bot(
                                 )
                             except Exception as e:
                                 logger.warning("Failed to capture application DOM: %s", e)
+                            state.pause()
+                            emit(
+                                "PAUSED_FOR_DIAGNOSIS",
+                                job_title=raw_job.title,
+                                company=raw_job.company,
+                                platform=raw_job.platform,
+                                message="Paused after failure; inspect and patch before retrying this job",
+                            )
                             emit(
                                 "ERROR",
                                 job_title=raw_job.title,
@@ -383,6 +391,7 @@ def run_bot(
                                 platform=raw_job.platform,
                                 message=result.error_message or "Application failed",
                             )
+                            return
 
                         # Rate limit between applications
                         if not state.stop_flag:

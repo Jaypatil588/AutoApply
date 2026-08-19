@@ -25,7 +25,7 @@ class ICIMSApplier(BaseApplier):
         self._safe_goto(job.raw.apply_url)
         self._random_pause(1, 2)
 
-        frame = self.page.frame(name="icims_content_iframe")
+        frame = self._content_frame()
         if not frame:
             return ApplyResult(
                 success=False, manual_required=True,
@@ -44,7 +44,7 @@ class ICIMSApplier(BaseApplier):
         self._random_pause(1, 2)
 
         for _ in range(self.MAX_STEPS):
-            frame = self.page.frame(name="icims_content_iframe")
+            frame = self._content_frame()
             if not frame:
                 return ApplyResult(
                     success=False, manual_required=True,
@@ -71,7 +71,7 @@ class ICIMSApplier(BaseApplier):
             if submit and submit.is_visible():
                 submit.click()
                 self._random_pause(2, 4)
-                frame = self.page.frame(name="icims_content_iframe")
+                frame = self._content_frame()
                 if frame and self._is_confirmed(frame):
                     return ApplyResult(success=True)
                 return ApplyResult(
@@ -101,6 +101,17 @@ class ICIMSApplier(BaseApplier):
             frame.wait_for_selector(selector, timeout=timeout, state="visible")
             return frame.query_selector(selector)
         except Exception:
+            return None
+
+    def _content_frame(self):
+        """Wait for the legacy iCIMS iframe observed on the host page."""
+        iframe = self._wait_and_query('iframe#icims_content_iframe', timeout=8000)
+        if not iframe:
+            return None
+        try:
+            return iframe.content_frame()
+        except Exception as e:
+            logger.debug("iCIMS content iframe was not ready: %s", e)
             return None
 
     def _frame_has_captcha(self, frame) -> bool:

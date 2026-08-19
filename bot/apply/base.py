@@ -20,8 +20,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Retry configuration
-MAX_RETRIES = 2
-RETRY_DELAYS = [3, 8]  # seconds before each retry
+MAX_RETRIES = 0
+RETRY_DELAYS: list[int] = []
 
 
 @dataclass
@@ -73,8 +73,8 @@ class BaseApplier(ABC):
     ) -> ApplyResult:
         """Submit a job application with automatic retry on transient failures.
 
-        Retries up to MAX_RETRIES times on network/timeout errors.
-        Does NOT retry on CAPTCHA, manual_required, or form validation errors.
+        Attempts each application exactly once. Failures are diagnosed from the
+        captured DOM before the queue is resumed for that same job.
 
         Returns:
             ApplyResult indicating success or failure.

@@ -79,6 +79,7 @@ def test_icims_requires_manual_captcha(_sleep):
     frame = MagicMock()
     page.frame.return_value = frame
     applier = ICIMSApplier(page)
+    applier._content_frame = MagicMock(return_value=frame)
     applier._frame_wait = MagicMock(return_value=MagicMock())
     applier._frame_has_captcha = MagicMock(return_value=True)
 
@@ -103,6 +104,7 @@ def test_icims_requires_confirmation_after_submit(_sleep):
         submit if "Submit" in selector else None
     )
     applier = ICIMSApplier(page)
+    applier._content_frame = MagicMock(return_value=frame)
     applier._frame_wait = MagicMock(return_value=MagicMock())
     applier._frame_has_captcha = MagicMock(return_value=False)
     applier._is_confirmed = MagicMock(return_value=False)

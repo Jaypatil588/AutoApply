@@ -140,6 +140,10 @@ def run_bot(
                         if state.stop_flag:
                             break
 
+                        if page.is_closed():
+                            logger.warning("Application page was closed; reopening one browser page")
+                            page = browser.get_page()
+
                         state.increment_found()
                         emit(
                             "FOUND",

@@ -80,6 +80,7 @@ class BaseApplier(ABC):
         """
         last_result = None
         started_at = time.monotonic()
+        self._attempt_started_at = started_at
         platform = self.__class__.__name__.replace("Applier", "")
 
         for attempt in range(1, MAX_RETRIES + 2):  # 1 + MAX_RETRIES
@@ -141,6 +142,20 @@ class BaseApplier(ABC):
         result.timed_out = result.elapsed_seconds >= self.APPLICATION_TIMEOUT_SECONDS
         return result
 
+    def _remaining_timeout_ms(self, requested_ms: int) -> int:
+        """Limit each browser wait to the current application's hard deadline."""
+        started_at = getattr(self, "_attempt_started_at", None)
+        if started_at is None:
+            return requested_ms
+        remaining_ms = int(
+            (self.APPLICATION_TIMEOUT_SECONDS - (time.monotonic() - started_at)) * 1000
+        )
+        if remaining_ms <= 0:
+            raise TimeoutError(
+                f"Application exceeded {self.APPLICATION_TIMEOUT_SECONDS}s"
+            )
+        return min(requested_ms, remaining_ms)
+
     def _human_type(self, locator, text: str) -> None:
         """Type text character by character with human-like delays."""
         for char in text:
@@ -149,7 +164,16 @@ class BaseApplier(ABC):
 
     def _random_pause(self, min_s: float = 0.5, max_s: float = 2.0) -> None:
         """Sleep for a random duration to mimic human behavior."""
-        time.sleep(random.uniform(min_s, max_s))
+        pause = random.uniform(min_s, max_s)
+        started_at = getattr(self, "_attempt_started_at", None)
+        if started_at is not None:
+            remaining = self.APPLICATION_TIMEOUT_SECONDS - (time.monotonic() - started_at)
+            if remaining <= 0:
+                raise TimeoutError(
+                    f"Application exceeded {self.APPLICATION_TIMEOUT_SECONDS}s"
+                )
+            pause = min(pause, remaining)
+        time.sleep(pause)
 
     def _detect_captcha(self) -> bool:
         """Check if a CAPTCHA challenge is present on the page."""
@@ -168,12 +192,14 @@ class BaseApplier(ABC):
     def _safe_goto(self, url: str, **kwargs) -> None:
         """Navigate to URL with configurable timeout and wait."""
         kwargs.setdefault("wait_until", "domcontentloaded")
-        kwargs.setdefault("timeout", self.NAV_TIMEOUT)
+        kwargs["timeout"] = self._remaining_timeout_ms(
+            int(kwargs.get("timeout", self.NAV_TIMEOUT))
+        )
         self.page.goto(url, **kwargs)
 
     def _wait_and_query(self, selector: str, timeout: int | None = None) -> Any:
         """Wait for an element to appear, then return it. Returns None on timeout."""
-        timeout = timeout or self.ELEMENT_TIMEOUT
+        timeout = self._remaining_timeout_ms(timeout or self.ELEMENT_TIMEOUT)
         try:
             self.page.wait_for_selector(selector, timeout=timeout, state="visible")
             return self.page.query_selector(selector)

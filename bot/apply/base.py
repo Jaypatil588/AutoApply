@@ -32,6 +32,7 @@ class ApplyResult:
     error_message: str | None = None
     captcha_detected: bool = False
     manual_required: bool = False
+    skipped: bool = False
     login_required: bool = False
     login_domain: str | None = None
     login_portal_type: str | None = None

@@ -53,6 +53,9 @@ APPLIERS: dict[str, type[BaseApplier]] = {
     "icims": ICIMSApplier,
 }
 
+# Explicitly excluded from this CareerOps run at the user's direction.
+PERMANENTLY_SKIPPED_ATS = {"workday"}
+
 
 def run_bot(
     state: "BotState",
@@ -170,6 +173,25 @@ def run_bot(
                                 company=raw_job.company,
                                 platform=raw_job.platform,
                                 message=f"Filtered: {scored.skip_reason}",
+                            )
+                            continue
+
+                        platform = detect_ats(raw_job.apply_url) or raw_job.platform
+                        if platform in PERMANENTLY_SKIPPED_ATS:
+                            result = ApplyResult(
+                                success=False,
+                                skipped=True,
+                                error_message=f"{platform.title()} permanently skipped by run policy",
+                            )
+                            _save_application(
+                                db, scored, None, None, "", result,
+                            )
+                            emit(
+                                "SKIPPED",
+                                job_title=raw_job.title,
+                                company=raw_job.company,
+                                platform=platform,
+                                message=f"Skipped {platform.title()} by run policy",
                             )
                             continue
 
@@ -726,8 +748,10 @@ def _save_application(db, scored, resume_path, cl_path, cover_letter_text, resul
     """Save an application record and optional resume version to the database."""
     try:
         status = "applied" if result.success else (
-            "captcha_ignored" if result.captcha_detected else (
-                "manual_required" if result.manual_required else "error"
+            "skipped" if result.skipped else (
+                "captcha_ignored" if result.captcha_detected else (
+                    "manual_required" if result.manual_required else "error"
+                )
             )
         )
         app_id = db.save_application(
